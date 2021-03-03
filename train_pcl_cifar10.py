@@ -16,7 +16,6 @@ from trades import trades_loss
 import numpy as np
 import time
 
-
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--gpu', type=str, default='0')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
@@ -50,18 +49,17 @@ parser.add_argument('--model-dir', default='./model-cifar-wideResNet',
 parser.add_argument('--save-freq', '-s', default=5, type=int, metavar='N',
                     help='save frequency')
 
-
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 # settings
 model_dir = args.model_dir
 if not os.path.exists(model_dir):
     os.makedirs(model_dir)
-    
+
 log_dir = './log'
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
-    
+
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -157,7 +155,8 @@ def adjust_learning_rate(optimizer, epoch):
         lr = args.lr * 0.001
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
-        
+
+
 def _pgd_whitebox(model,
                   X,
                   y,
@@ -186,6 +185,7 @@ def _pgd_whitebox(model,
     err_pgd = (model(X_pgd).data.max(1)[1] != y.data).float().sum()
     # print('err pgd (white-box): ', err_pgd)
     return err, err_pgd
+
 
 def eval_adv_test_whitebox(model, device, test_loader):
     """
@@ -216,11 +216,11 @@ def main():
 
     natural_acc = []
     robust_acc = []
-    
+
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
         adjust_learning_rate(optimizer, epoch)
-        
+
         start_time = time.time()
 
         # adversarial training
@@ -231,20 +231,20 @@ def main():
         # eval_train(model, device, train_loader)
         # eval_test(model, device, test_loader)
         natural_err_total, robust_err_total = eval_adv_test_whitebox(model, device, test_loader)
-        
-        print('using time:', time.time()-start_time)
-        
+
+        print('using time:', time.time() - start_time)
+
         natural_acc.append(natural_err_total)
         robust_acc.append(robust_err_total)
         print('================================================================')
-        
+
         file_name = os.path.join(log_dir, 'train_stats_%s.npy' % (epoch))
         # np.save(file_name, np.stack((np.array(self.train_loss), np.array(self.test_loss),
         #                              np.array(self.train_acc), np.array(self.test_acc),
         #                              np.array(self.elasticity), np.array(self.x_grads),
         #                              np.array(self.fgsms), np.array(self.pgds),
         #                              np.array(self.cws))))
-        np.save(file_name, np.stack((np.array(natural_acc), np.array(robust_acc))))        
+        np.save(file_name, np.stack((np.array(natural_acc), np.array(robust_acc))))
 
         # save checkpoint
         # if epoch % args.save_freq == 0:

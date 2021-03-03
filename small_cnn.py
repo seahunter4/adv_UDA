@@ -57,7 +57,6 @@ class SmallCNN(nn.Module):
 
     def forward(self, input):
         features = self.feature_extractor(input)
-        print("features size {}".format(features.size()))
+        print(1)
         logits = self.classifier(features.view(-1, 196 * 4 * 4))
-        print("logits size{}".format(logits.size()))
         return logits

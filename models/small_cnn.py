@@ -59,10 +59,10 @@ class SmallCNN(nn.Module):
         f = self.classifier(features.view(-1, 196 * 4 * 4))
         bn = self.classifier_bn(f)
         relu = self.classifier_relu(bn)
-        fc = self.classifier_fc(relu)
-        print("features {}\n"
-              "f {}"
-              "bn {}"
-              "relu {}"
-              "fc {}".format(features.size(), f, bn, relu, fc))
-        return features, fc
+        logits = self.classifier_fc(relu)
+        # print("features {}\n"
+        #       "f {}"
+        #       "bn {}"
+        #       "relu {}"
+        #       "fc {}".format(features.size(), f, bn, relu, fc))
+        return f, logits

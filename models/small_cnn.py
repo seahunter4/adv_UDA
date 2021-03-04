@@ -64,5 +64,5 @@ class SmallCNN(nn.Module):
               "f {}"
               "bn {}"
               "relu {}"
-              "fc {}".format(features.size(), f.size(), bn.size(), relu.size(), fc.size()))
+              "fc {}".format(features.size(), f, bn, relu, fc))
         return features, fc

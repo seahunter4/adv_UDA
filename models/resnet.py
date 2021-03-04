@@ -108,6 +108,9 @@ def ResNet101():
 def ResNet152():
     return ResNet(Bottleneck, [3, 8, 36, 3])
 
+def ResNet110():
+    return ResNet(Bottleneck, [3, ])
+
 
 def test():
     net = ResNet18()

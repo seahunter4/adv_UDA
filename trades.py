@@ -33,7 +33,7 @@ def trades_loss(model,
             x_adv.requires_grad_()
             with torch.enable_grad():
                 features, logits = model(x_adv)
-                print("features {} logits {}".format(features.size(), logits.size()))
+                # print("features {} logits {}".format(features.size(), logits.size()))
                 loss_kl = F.cross_entropy(logits, y)
             grad = torch.autograd.grad(loss_kl, [x_adv])[0]
             x_adv = x_adv.detach() + step_size * torch.sign(grad.detach())

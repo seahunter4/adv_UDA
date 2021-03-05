@@ -11,13 +11,14 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 from proximity import Proximity
 from contrastive_proximity import Con_Proximity
-
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
 from trades import *
 import numpy as np
 import time
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--gpu', type=str, default='0')
@@ -215,7 +216,8 @@ def _pgd_whitebox(model,
         eta = torch.clamp(X_pgd.data - X.data, -epsilon, epsilon)
         X_pgd = Variable(X.data + eta, requires_grad=True)
         X_pgd = Variable(torch.clamp(X_pgd, 0, 1.0), requires_grad=True)
-    err_pgd = (model(X_pgd).data.max(1)[1] != y.data).float().sum()
+    _, output = model(X_pgd)
+    err_pgd = (output.data.max(1)[1] != y.data).float().sum()
     # print('err pgd (white-box): ', err_pgd)
     return err, err_pgd
 

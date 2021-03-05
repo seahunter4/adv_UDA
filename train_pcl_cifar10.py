@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import argparse
+import datetime
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -101,13 +102,10 @@ test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_si
 def train(model, device, train_loader, optimizer,
           criterion_prox, optimizer_prox,
           criterion_conprox, optimizer_conprox, epoch):
-    model.train()
     start_time = time.time()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
-        optimizer.zero_grad()
-        optimizer_prox.zero_grad()
-        optimizer_conprox.zero_grad()
+        model.eval()
         adv_data = generate_adv_data(model=model,
                                      x_natural=data,
                                      y=target,
@@ -119,6 +117,7 @@ def train(model, device, train_loader, optimizer,
         true_labels = target
         data = torch.cat((data, adv_data), 0)
         labels = torch.cat((target, true_labels))
+        model.train()
         feats, logits = model(data)
         loss_xent = F.cross_entropy(logits, labels)
         loss_prox = criterion_prox(feats, labels)
@@ -128,6 +127,9 @@ def train(model, device, train_loader, optimizer,
                         loss_conprox,
                         args.weight_prox,
                         args.weight_conprox)
+        optimizer.zero_grad()
+        optimizer_prox.zero_grad()
+        optimizer_conprox.zero_grad()
 
         loss.backward()
         optimizer.step()
@@ -135,10 +137,12 @@ def train(model, device, train_loader, optimizer,
         optimizer_conprox.step()
 
         # print progress
-        if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+        if (batch_idx+1) % args.log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(train_loader), loss.item()))
+                       100. * batch_idx / len(train_loader), loss.item(),
+                datetime.timedelta(seconds=round(time.time() - start_time))))
+            start_time = time.time()
 
 
 def eval_train(model, device, train_loader):

@@ -29,9 +29,9 @@ class Con_Proximity(nn.Module):
 
         dist = []
         for i in range(batch_size):
-            k = mask[i].clone().to(dtype=torch.int8)
-            k = -1 * k + 1
-            kk = k.clone().to(dtype=torch.uint8)
+            k = mask[i].clone()
+            k = (-1 * k + 1).bool()
+            kk = k.clone()
             value = distmat[i][kk]
             value = value.clamp(min=1e-12, max=1e+12) # for numerical stability
             dist.append(value)

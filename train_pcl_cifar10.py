@@ -98,7 +98,7 @@ testset = torchvision.datasets.CIFAR10(root='./data_attack/cifar10', train=False
 test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, num_workers=4)
 
 
-def train(args, model, device, train_loader, optimizer,
+def train(model, device, train_loader, optimizer,
           criterion_prox, optimizer_prox,
           criterion_conprox, optimizer_conprox, epoch):
     model.train()
@@ -260,7 +260,9 @@ def main():
         start_time = time.time()
 
         # adversarial training
-        train(model, device, train_loader, optimizer, epoch)
+        train(model, device, train_loader, optimizer,
+              criterion_prox, optimizer_prox,
+              criterion_conprox, optimizer_conprox, epoch)
 
         # evaluation on natural examples
         print('================================================================')

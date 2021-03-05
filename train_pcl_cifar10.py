@@ -123,11 +123,7 @@ def train(model, device, train_loader, optimizer,
         loss_xent = F.cross_entropy(logits, labels)
         loss_prox = criterion_prox(feats, labels)
         loss_conprox = criterion_conprox(feats, labels)
-        loss = pcl_loss(loss_xent,
-                        loss_prox,
-                        loss_conprox,
-                        args.weight_prox,
-                        args.weight_conprox)
+        loss = loss_xent + args.weight_prox * loss_prox - args.weight_conprox * loss_conprox
         optimizer.zero_grad()
         optimizer_prox.zero_grad()
         optimizer_conprox.zero_grad()
@@ -139,9 +135,10 @@ def train(model, device, train_loader, optimizer,
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} takes {}'.format(
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} prox: {:6f} conprox: {:6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss.item(),
+                       loss_xent.item(), loss_prox.item(), loss_conprox.item(),
                 datetime.timedelta(seconds=round(time.time() - start_time))))
             start_time = time.time()
 
@@ -197,7 +194,7 @@ def _pgd_whitebox(model,
                   epsilon=args.epsilon,
                   num_steps=args.num_steps,
                   step_size=args.step_size):
-    out = model(X)
+    _, out = model(X)
     err = (out.data.max(1)[1] != y.data).float().sum()
     X_pgd = Variable(X.data, requires_grad=True)
     # if args.random:

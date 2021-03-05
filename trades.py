@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from proximity import Proximity
 from contrastive_proximity import Con_Proximity
-from triplet_center_loss import TriCenLoss
+from triplet_center_loss import TriCenLossbyPart
 
 
 def squared_l2_norm(x):

@@ -8,11 +8,13 @@ import torchvision
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
+from proximity import Proximity
+from contrastive_proximity import Con_Proximity
 
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
-from trades import trades_loss
+from trades import *
 import numpy as np
 import time
 
@@ -42,12 +44,28 @@ parser.add_argument('--beta', default=1.0,
                     help='regularization, i.e., 1/lambda in TRADES')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
-parser.add_argument('--log-interval', type=int, default=1, metavar='N',
+parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--model-dir', default='./model-cifar-wideResNet',
+parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN',
+                    help='directory of stas for saving checkpoint')
+parser.add_argument('--model-dir', default='./model-cifar-smallCNN',
                     help='directory of model for saving checkpoint')
-parser.add_argument('--save-freq', '-s', default=5, type=int, metavar='N',
+parser.add_argument('--save-model', default='smallCNN_cifar10_pcl_advPGD',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--save-freq', '-s', default=10, type=int, metavar='N',
                     help='save frequency')
+parser.add_argument('--lr-prox', type=float, default=0.5,
+                    help="learning rate for Proximity Loss")
+parser.add_argument('--weight-prox', type=float, default=1,
+                    help="weight for Proximity Loss")
+parser.add_argument('--lr-conprox', type=float, default=0.00001,
+                    help="learning rate for Con-Proximity Loss")
+parser.add_argument('--weight-conprox', type=float, default=0.00001,
+                    help="weight for Con-Proximity Loss")
+parser.add_argument('--sub-sample', action='store_true')
+parser.add_argument('--sub-size', type=int, default=5000)
+parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
+                        help='Decrease learning rate at these epochs.')
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -56,9 +74,9 @@ model_dir = args.model_dir
 if not os.path.exists(model_dir):
     os.makedirs(model_dir)
 
-log_dir = './log'
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
+stats_dir = args.stats_dir
+if not os.path.exists(stats_dir):
+    os.makedirs(stats_dir)
 
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
@@ -74,30 +92,47 @@ transform_train = transforms.Compose([
 transform_test = transforms.Compose([
     transforms.ToTensor(),
 ])
-trainset = torchvision.datasets.CIFAR10(root='./data_attack/', train=True, download=True, transform=transform_train)
+trainset = torchvision.datasets.CIFAR10(root='./data_attack/cifar10', train=True, download=True, transform=transform_train)
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=4)
-testset = torchvision.datasets.CIFAR10(root='./data_attack/', train=False, download=True, transform=transform_test)
+testset = torchvision.datasets.CIFAR10(root='./data_attack/cifar10', train=False, download=True, transform=transform_test)
 test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, num_workers=4)
 
 
-def train(args, model, device, train_loader, optimizer, epoch):
+def train(args, model, device, train_loader, optimizer,
+          criterion_prox, optimizer_prox,
+          criterion_conprox, optimizer_conprox, epoch):
     model.train()
+    start_time = time.time()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
-
         optimizer.zero_grad()
+        optimizer_prox.zero_grad()
+        optimizer_conprox.zero_grad()
+        adv_data = generate_adv_data(model=model,
+                                     x_natural=data,
+                                     y=target,
+                                     optimizer=optimizer,
+                                     step_size=args.step_size,
+                                     epsilon=args.epsilon,
+                                     perturb_steps=args.num_steps,
+                                     beta=args.beta)
+        true_labels = target
+        data = torch.cat((data, adv_data), 0)
+        labels = torch.cat((target, true_labels))
+        feats, logits = model(data)
+        loss_xent = F.cross_entropy(logits, labels)
+        loss_prox = criterion_prox(feats, labels)
+        loss_conprox = criterion_conprox(feats, labels)
+        loss = pcl_loss(loss_xent,
+                        loss_prox,
+                        loss_conprox,
+                        args.weight_prox,
+                        args.weight_conprox)
 
-        # calculate robust loss
-        loss = trades_loss(model=model,
-                           x_natural=data,
-                           y=target,
-                           optimizer=optimizer,
-                           step_size=args.step_size,
-                           epsilon=args.epsilon,
-                           perturb_steps=args.num_steps,
-                           beta=args.beta)
         loss.backward()
         optimizer.step()
+        optimizer_prox.step()
+        optimizer_conprox.step()
 
         # print progress
         if batch_idx % args.log_interval == 0:
@@ -146,15 +181,9 @@ def eval_test(model, device, test_loader):
 
 def adjust_learning_rate(optimizer, epoch):
     """decrease the learning rate"""
-    lr = args.lr
-    if epoch >= 75:
-        lr = args.lr * 0.1
-    elif epoch >= 90:
-        lr = args.lr * 0.01
-    elif epoch >= 100:
-        lr = args.lr * 0.001
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+    if epoch in args.schedule:
+        for param_group in optimizer.param_groups:
+            param_group['lr'] *= 0.1
 
 
 def _pgd_whitebox(model,
@@ -212,7 +241,12 @@ def main():
     # model = WideResNet().to(device)
     model = SmallCNN().to(device)
     print(model)
+    criterion_prox = Proximity(10, 256, True)
+    criterion_conprox = Con_Proximity(10, 256, True)
+    optimizer_prox = optim.SGD(criterion_prox.parameters(), lr=args.lr_prox)
+    optimizer_conprox = optim.SGD(criterion_conprox.parameters(), lr=args.lr_conprox)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+
 
     natural_acc = []
     robust_acc = []
@@ -220,14 +254,17 @@ def main():
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
         adjust_learning_rate(optimizer, epoch)
+        adjust_learning_rate(optimizer_prox, epoch)
+        adjust_learning_rate(optimizer_conprox, epoch)
 
         start_time = time.time()
 
         # adversarial training
-        train(args, model, device, train_loader, optimizer, epoch)
+        train(model, device, train_loader, optimizer, epoch)
 
         # evaluation on natural examples
         print('================================================================')
+        print("Current time: {}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
         # eval_train(model, device, train_loader)
         # eval_test(model, device, test_loader)
         natural_err_total, robust_err_total = eval_adv_test_whitebox(model, device, test_loader)
@@ -238,7 +275,7 @@ def main():
         robust_acc.append(robust_err_total)
         print('================================================================')
 
-        file_name = os.path.join(log_dir, 'train_stats_%s.npy' % (epoch))
+        file_name = os.path.join(stats_dir, '{}_stat{}.npy'.format(args.save_model, epoch))
         # np.save(file_name, np.stack((np.array(self.train_loss), np.array(self.test_loss),
         #                              np.array(self.train_acc), np.array(self.test_acc),
         #                              np.array(self.elasticity), np.array(self.x_grads),
@@ -247,11 +284,11 @@ def main():
         np.save(file_name, np.stack((np.array(natural_acc), np.array(robust_acc))))
 
         # save checkpoint
-        # if epoch % args.save_freq == 0:
-        #     torch.save(model.state_dict(),
-        #                os.path.join(model_dir, 'model-res-epoch{}.pt'.format(epoch)))
-        #     torch.save(optimizer.state_dict(),
-        #                os.path.join(model_dir, 'opt-res-checkpoint_epoch{}.tar'.format(epoch)))
+        if epoch % args.save_freq == 0:
+            torch.save(model.state_dict(),
+                       os.path.join(model_dir, '{}_ep{}.pt'.format(args.save_model, epoch)))
+            torch.save(optimizer.state_dict(),
+                       os.path.join(model_dir, 'opt-{}_ep{}.tar'.format(args.save_model, epoch)))
 
 
 if __name__ == '__main__':

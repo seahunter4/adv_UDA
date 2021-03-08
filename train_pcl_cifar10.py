@@ -120,27 +120,27 @@ def train(model, device, train_loader, optimizer,
         labels = torch.cat((target, true_labels))
         model.train()
         feats, logits = model(data)
-        print(feats)
-        print(logits)
+        # print(feats)
+        # print(logits)
         loss_xent = F.cross_entropy(logits, labels)
-        loss_prox = criterion_prox(feats, labels)
-        loss_conprox = criterion_conprox(feats, labels)
-        loss = loss_xent + args.weight_prox * loss_prox - args.weight_conprox * loss_conprox
+        # loss_prox = criterion_prox(feats, labels)
+        # loss_conprox = criterion_conprox(feats, labels)
+        loss = loss_xent # + args.weight_prox * loss_prox - args.weight_conprox * loss_conprox
         optimizer.zero_grad()
-        optimizer_prox.zero_grad()
-        optimizer_conprox.zero_grad()
+        # optimizer_prox.zero_grad()
+        # optimizer_conprox.zero_grad()
 
         loss.backward()
         optimizer.step()
-        optimizer_prox.step()
-        optimizer_conprox.step()
+        # optimizer_prox.step()
+        # optimizer_conprox.step()
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} prox: {:6f} conprox: {:6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss.item(),
-                       loss_xent.item(), loss_prox.item(), loss_conprox.item(),
+                       loss_xent.item(), 0, 0,  # loss_prox.item(), loss_conprox.item(),
                 datetime.timedelta(seconds=round(time.time() - start_time))))
             start_time = time.time()
 

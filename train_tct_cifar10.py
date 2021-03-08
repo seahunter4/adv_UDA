@@ -11,6 +11,7 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 from proximity import Proximity
 from contrastive_proximity import Con_Proximity
+from triplet_center_loss import TriCenLossbyPart
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
@@ -52,7 +53,7 @@ parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN',
                     help='directory of stas for saving checkpoint')
 parser.add_argument('--model-dir', default='./model-cifar-smallCNN',
                     help='directory of model for saving checkpoint')
-parser.add_argument('--save-model', default='smallCNN_cifar10_pcl_advPGD',
+parser.add_argument('--save-model', default='smallCNN_cifar10_tct_advPGD',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=10, type=int, metavar='N',
                     help='save frequency')
@@ -63,6 +64,10 @@ parser.add_argument('--weight-prox', type=float, default=1,
 parser.add_argument('--lr-conprox', type=float, default=0.00001,
                     help="learning rate for Con-Proximity Loss")
 parser.add_argument('--weight-conprox', type=float, default=0.00001,
+                    help="weight for Con-Proximity Loss")
+parser.add_argument('--lr-tct', type=float, default=0.5,
+                    help="learning rate for Con-Proximity Loss")
+parser.add_argument('--weight-tct', type=float, default=1,
                     help="weight for Con-Proximity Loss")
 parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
@@ -101,8 +106,7 @@ test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_si
 
 
 def train(model, device, train_loader, optimizer,
-          criterion_prox, optimizer_prox,
-          criterion_conprox, optimizer_conprox, epoch):
+          criterion_tct, optimizer_tct, epoch):
     start_time = time.time()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
@@ -121,24 +125,21 @@ def train(model, device, train_loader, optimizer,
         model.train()
         feats, logits = model(data)
         loss_xent = F.cross_entropy(logits, labels)
-        loss_prox = criterion_prox(feats, labels)
-        loss_conprox = criterion_conprox(feats, labels)
-        loss = loss_xent + args.weight_prox * loss_prox - args.weight_conprox * loss_conprox
+        loss_tct = criterion_tct(feats, labels)
+        loss = loss_xent + args.weight_tct * loss_tct
         optimizer.zero_grad()
-        optimizer_prox.zero_grad()
-        optimizer_conprox.zero_grad()
+        optimizer_tct.zero_grad()
 
         loss.backward()
         optimizer.step()
-        optimizer_prox.step()
-        optimizer_conprox.step()
+        optimizer_tct.step()
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} prox: {:6f} conprox: {:6f} takes {}'.format(
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} tct: {:6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss.item(),
-                       loss_xent.item(), loss_prox.item(), loss_conprox.item(),
+                       loss_xent.item(), loss_tct.item(),
                 datetime.timedelta(seconds=round(time.time() - start_time))))
             start_time = time.time()
 
@@ -169,7 +170,7 @@ def eval_test(model, device, test_loader):
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            output = model(data)
+            _, output = model(data)
             test_loss += F.cross_entropy(output, target, size_average=False).item()
             pred = output.max(1, keepdim=True)[1]
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -206,7 +207,8 @@ def _pgd_whitebox(model,
         opt.zero_grad()
 
         with torch.enable_grad():
-            loss = nn.CrossEntropyLoss()(model(X_pgd), y)
+            _, logits = model(X_pgd)
+            loss = nn.CrossEntropyLoss()(logits, y)
         loss.backward()
         eta = step_size * X_pgd.grad.data.sign()
         X_pgd = Variable(X_pgd.data + eta, requires_grad=True)
@@ -244,10 +246,8 @@ def main():
     # model = WideResNet().to(device)
     model = SmallCNN().to(device)
     print(model)
-    criterion_prox = Proximity(10, 256, True)
-    criterion_conprox = Con_Proximity(10, 256, True)
-    optimizer_prox = optim.SGD(criterion_prox.parameters(), lr=args.lr_prox)
-    optimizer_conprox = optim.SGD(criterion_conprox.parameters(), lr=args.lr_conprox)
+    criterion_tct = TriCenLossbyPart(10, 256)
+    optimizer_tct = optim.SGD(criterion_tct.parameters(), lr=args.lr_tct)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
 
@@ -257,15 +257,13 @@ def main():
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
         adjust_learning_rate(optimizer, epoch)
-        adjust_learning_rate(optimizer_prox, epoch)
-        adjust_learning_rate(optimizer_conprox, epoch)
+        adjust_learning_rate(optimizer_tct, epoch)
 
         start_time = time.time()
 
         # adversarial training
         train(model, device, train_loader, optimizer,
-              criterion_prox, optimizer_prox,
-              criterion_conprox, optimizer_conprox, epoch)
+              criterion_tct, optimizer_tct, epoch)
 
         # evaluation on natural examples
         print('================================================================')

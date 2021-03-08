@@ -69,6 +69,8 @@ parser.add_argument('--lr-tct', type=float, default=0.5,
                     help="learning rate for Con-Proximity Loss")
 parser.add_argument('--weight-tct', type=float, default=1,
                     help="weight for Con-Proximity Loss")
+parser.add_argument('--margin', type=float, default=1,
+                    help="margin")
 parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
 parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
@@ -125,7 +127,7 @@ def train(model, device, train_loader, optimizer,
         model.train()
         feats, logits = model(data)
         loss_xent = F.cross_entropy(logits, labels)
-        loss_tct = criterion_tct(feats, labels)
+        loss_tct = criterion_tct(feats, labels, args.margin)
         loss = loss_xent + args.weight_tct * loss_tct
         optimizer.zero_grad()
         optimizer_tct.zero_grad()

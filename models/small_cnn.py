@@ -35,9 +35,11 @@ class SmallCNN(nn.Module):
             ('maxpool3', nn.MaxPool2d(2)),
         ]))
 
-        self.classifier = nn.Sequential(OrderedDict([
+        self.feature_layer = nn.Sequential(OrderedDict([
             ('fc1', nn.Linear(196 * 4 * 4, 256)),
-            ('bn1', nn.BatchNorm1d(256)),
+            ('bn1', nn.BatchNorm1d(256))]))
+
+        self.classifier = nn.Sequential(OrderedDict([
             ('relu1', activ),
             ('fc3', nn.Linear(256, self.num_labels))
         ]))
@@ -57,10 +59,11 @@ class SmallCNN(nn.Module):
 
     def forward(self, input):
         features = self.feature_extractor(input)
-        logits = self.classifier(features.view(-1, 196 * 4 * 4))
+        feats = self.feature_layer(features.view(-1, 196 * 4 * 4))
+        logits = self.classifier(feats)
         # print("features {}\n"
         #       "f {}"
         #       "bn {}"
         #       "relu {}"
         #       "fc {}".format(features.size(), f, bn, relu, fc))
-        return self.classifier.bn1, logits
+        return feats, logits

@@ -123,17 +123,17 @@ def train(model, device, train_loader, optimizer,
         # print(feats)
         # print(logits)
         loss_xent = F.cross_entropy(logits, labels)
-        # loss_prox = criterion_prox(feats, labels)
-        # loss_conprox = criterion_conprox(feats, labels)
-        loss = loss_xent # + args.weight_prox * loss_prox - args.weight_conprox * loss_conprox
+        loss_prox = criterion_prox(feats, labels)
+        loss_conprox = criterion_conprox(feats, labels)
+        loss = loss_xent + args.weight_prox * loss_prox - args.weight_conprox * loss_conprox
         optimizer.zero_grad()
-        # optimizer_prox.zero_grad()
-        # optimizer_conprox.zero_grad()
+        optimizer_prox.zero_grad()
+        optimizer_conprox.zero_grad()
 
         loss.backward()
         optimizer.step()
-        # optimizer_prox.step()
-        # optimizer_conprox.step()
+        optimizer_prox.step()
+        optimizer_conprox.step()
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:

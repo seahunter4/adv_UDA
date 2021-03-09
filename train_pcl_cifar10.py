@@ -140,7 +140,7 @@ def train(model, device, train_loader, optimizer,
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} prox: {:6f} conprox: {:6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss.item(),
-                       loss_xent.item(), 0, 0,  # loss_prox.item(), loss_conprox.item(),
+                       loss_xent.item(), loss_prox.item(), loss_conprox.item(),
                 datetime.timedelta(seconds=round(time.time() - start_time))))
             start_time = time.time()
 
@@ -277,7 +277,7 @@ def main():
         # eval_test(model, device, test_loader)
         natural_err_total, robust_err_total = eval_adv_test_whitebox(model, device, test_loader)
 
-        print('using time:', time.time() - start_time)
+        print('using time:', datetime.timedelta(seconds=round(time.time() - start_time)))
 
         natural_acc.append(natural_err_total)
         robust_acc.append(robust_err_total)

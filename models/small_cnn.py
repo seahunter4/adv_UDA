@@ -53,7 +53,7 @@ class SmallCNN(nn.Module):
         # nn.init.constant_(self.classifier.fc1.weight, 0)
         # nn.init.constant_(self.classifier.fc1.bias, 0)
         nn.init.constant_(self.classifier.fc3.weight, 0)
-        nn.init.constant_(self.classifie.fc3.bias, 0)
+        nn.init.constant_(self.classifier.fc3.bias, 0)
 
     def forward(self, input):
         features = self.feature_extractor(input)

@@ -36,10 +36,11 @@ class SmallCNN(nn.Module):
         ]))
 
         self.classifier = nn.Sequential(OrderedDict([
-            ('fc1', nn.Linear(196 * 4 * 4, 256))]))
-        self.classifier_bn = nn.Sequential(OrderedDict([('bn1', nn.BatchNorm1d(256))]))
-        self.classifier_relu = nn.Sequential(OrderedDict([('relu1', activ)]))
-        self.classifier_fc = nn.Sequential(OrderedDict([('fc3', nn.Linear(256, self.num_labels))]))
+            ('fc1', nn.Linear(196 * 4 * 4, 256)),
+            ('bn1', nn.BatchNorm1d(256)),
+            ('relu1', activ),
+            ('fc3', nn.Linear(256, self.num_labels))
+        ]))
 
         for m in self.modules():
             if isinstance(m, (nn.Conv2d)):
@@ -56,13 +57,10 @@ class SmallCNN(nn.Module):
 
     def forward(self, input):
         features = self.feature_extractor(input)
-        f = self.classifier(features.view(-1, 196 * 4 * 4))
-        bn = self.classifier_bn(f)
-        relu = self.classifier_relu(bn)
-        logits = self.classifier_fc(relu)
+        logits = self.classifier(features.view(-1, 196 * 4 * 4))
         # print("features {}\n"
         #       "f {}"
         #       "bn {}"
         #       "relu {}"
         #       "fc {}".format(features.size(), f, bn, relu, fc))
-        return f, logits
+        return self.classifier.bn1, logits

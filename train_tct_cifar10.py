@@ -126,6 +126,7 @@ def train(model, device, train_loader, optimizer,
         labels = torch.cat((target, true_labels))
         model.train()
         feats, logits = model(data)
+        print("feats={}\nlogits={}".format(feats, logits))
         loss_xent = F.cross_entropy(logits, labels)
         loss_tct = criterion_tct(feats, labels, args.margin)
         loss = loss_xent + args.weight_tct * loss_tct

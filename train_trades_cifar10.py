@@ -12,7 +12,7 @@ from torch.autograd import Variable
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
-from trades import trades_loss
+from trades import *
 import numpy as np
 import time
 
@@ -92,14 +92,19 @@ def train(args, model, device, train_loader, optimizer, epoch):
         optimizer.zero_grad()
 
         # calculate robust loss
-        loss = trades_loss(model=model,
-                           x_natural=data,
-                           y=target,
-                           optimizer=optimizer,
-                           step_size=args.step_size,
-                           epsilon=args.epsilon,
-                           perturb_steps=args.num_steps,
-                           beta=args.beta)
+        adv_data = generate_adv_data(model=model,
+                                     x_natural=data,
+                                     y=target,
+                                     optimizer=optimizer,
+                                     step_size=args.step_size,
+                                     epsilon=args.epsilon,
+                                     perturb_steps=args.num_steps,
+                                     beta=args.beta)
+        true_labels = target
+        data = torch.cat((data, adv_data), 0)
+        labels = torch.cat((target, true_labels))
+        _, logits = model(data)
+        loss = F.cross_entropy(logits, labels)
         loss.backward()
         optimizer.step()
 

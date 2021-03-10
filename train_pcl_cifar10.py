@@ -117,9 +117,11 @@ def train(model, device, train_loader, optimizer,
                                      epsilon=args.epsilon,
                                      perturb_steps=args.num_steps,
                                      beta=args.beta)
-        true_labels = target
-        data = torch.cat((data, adv_data), 0)
-        labels = torch.cat((target, true_labels))
+        # true_labels = target
+        # data = torch.cat((data, adv_data), 0)
+        # labels = torch.cat((target, true_labels))
+        data = adv_data
+        labels = target
         model.train()
         feats, logits = model(data)
         # print(feats)

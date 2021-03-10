@@ -115,7 +115,7 @@ def eval_train(model, device, train_loader):
     with torch.no_grad():
         for data, target in train_loader:
             data, target = data.to(device), target.to(device)
-            output = model(data)
+            _, output = model(data)
             train_loss += F.cross_entropy(output, target, size_average=False).item()
             pred = output.max(1, keepdim=True)[1]
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -134,7 +134,7 @@ def eval_test(model, device, test_loader):
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            output = model(data)
+            _, output = model(data)
             test_loss += F.cross_entropy(output, target, size_average=False).item()
             pred = output.max(1, keepdim=True)[1]
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -148,15 +148,9 @@ def eval_test(model, device, test_loader):
 
 def adjust_learning_rate(optimizer, epoch):
     """decrease the learning rate"""
-    lr = args.lr
-    if epoch >= 75:
-        lr = args.lr * 0.1
-    elif epoch >= 90:
-        lr = args.lr * 0.01
-    elif epoch >= 100:
-        lr = args.lr * 0.001
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+    if epoch in args.schedule:
+        for param_group in optimizer.param_groups:
+            param_group['lr'] *= 0.1
         
 def _pgd_whitebox(model,
                   X,
@@ -164,7 +158,7 @@ def _pgd_whitebox(model,
                   epsilon=args.epsilon,
                   num_steps=args.num_steps,
                   step_size=args.step_size):
-    out = model(X)
+    _, out = model(X)
     err = (out.data.max(1)[1] != y.data).float().sum()
     X_pgd = Variable(X.data, requires_grad=True)
     # if args.random:
@@ -183,7 +177,8 @@ def _pgd_whitebox(model,
         eta = torch.clamp(X_pgd.data - X.data, -epsilon, epsilon)
         X_pgd = Variable(X.data + eta, requires_grad=True)
         X_pgd = Variable(torch.clamp(X_pgd, 0, 1.0), requires_grad=True)
-    err_pgd = (model(X_pgd).data.max(1)[1] != y.data).float().sum()
+    _, logits = model(X_pgd)
+    err_pgd = (logits.data.max(1)[1] != y.data).float().sum()
     # print('err pgd (white-box): ', err_pgd)
     return err, err_pgd
 

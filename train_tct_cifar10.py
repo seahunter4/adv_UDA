@@ -49,9 +49,9 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN',
-                    help='directory of stas for saving checkpoint')
-parser.add_argument('--model-dir', default='./model-cifar-smallCNN',
+parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN/tct',
+                    help='directory of stats for saving checkpoint')
+parser.add_argument('--model-dir', default='./model-cifar-smallCNN/tct',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-model', default='smallCNN_cifar10_tct_advPGD',
                     help='directory of model for saving checkpoint')
@@ -67,6 +67,8 @@ parser.add_argument('--weight-conprox', type=float, default=0.00001,
                     help="weight for Con-Proximity Loss")
 parser.add_argument('--lr-tct', type=float, default=0.5,
                     help="learning rate for Con-Proximity Loss")
+parser.add_argument('--weight-xent', type=float, default=1,
+                    help="weight for Cross-Entropy Loss")
 parser.add_argument('--weight-tct', type=float, default=1,
                     help="weight for Con-Proximity Loss")
 parser.add_argument('--margin', type=float, default=1,
@@ -121,15 +123,17 @@ def train(model, device, train_loader, optimizer,
                                      epsilon=args.epsilon,
                                      perturb_steps=args.num_steps,
                                      beta=args.beta)
-        true_labels = target
-        data = torch.cat((data, adv_data), 0)
-        labels = torch.cat((target, true_labels))
+        # true_labels = target
+        # data = torch.cat((data, adv_data), 0)
+        # labels = torch.cat((target, true_labels))
+        data = adv_data
+        labels = target
         model.train()
         feats, logits = model(data)
         # print("feats={}\nlogits={}".format(feats, logits))
         loss_xent = F.cross_entropy(logits, labels)
         loss_tct = criterion_tct(feats, labels, args.margin)
-        loss = loss_xent + args.weight_tct * loss_tct
+        loss = args.weight_xent * loss_xent + args.weight_tct * loss_tct
         optimizer.zero_grad()
         optimizer_tct.zero_grad()
 

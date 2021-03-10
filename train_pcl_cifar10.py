@@ -48,9 +48,9 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN',
+parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN/pcl',
                     help='directory of stas for saving checkpoint')
-parser.add_argument('--model-dir', default='./model-cifar-smallCNN',
+parser.add_argument('--model-dir', default='./model-cifar-smallCNN/pcl',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-model', default='smallCNN_cifar10_pcl_advPGD',
                     help='directory of model for saving checkpoint')
@@ -64,6 +64,8 @@ parser.add_argument('--lr-conprox', type=float, default=0.00001,
                     help="learning rate for Con-Proximity Loss")
 parser.add_argument('--weight-conprox', type=float, default=0.00001,
                     help="weight for Con-Proximity Loss")
+parser.add_argument('--weight-xent', type=float, default=1,
+                    help="weight for Cross-Entropy Loss")
 parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
 parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
@@ -125,7 +127,7 @@ def train(model, device, train_loader, optimizer,
         loss_xent = F.cross_entropy(logits, labels)
         loss_prox = criterion_prox(feats, labels)
         loss_conprox = criterion_conprox(feats, labels)
-        loss = loss_xent + args.weight_prox * loss_prox - args.weight_conprox * loss_conprox
+        loss = args.weight_xent * loss_xent + args.weight_prox * loss_prox - args.weight_conprox * loss_conprox
         optimizer.zero_grad()
         optimizer_prox.zero_grad()
         optimizer_conprox.zero_grad()

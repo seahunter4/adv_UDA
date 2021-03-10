@@ -49,6 +49,8 @@ parser.add_argument('--model-dir', default='./model-cifar-wideResNet',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=5, type=int, metavar='N',
                     help='save frequency')
+parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
+                        help='Decrease learning rate at these epochs.')
 
 
 args = parser.parse_args()

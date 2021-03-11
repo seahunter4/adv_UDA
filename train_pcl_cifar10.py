@@ -70,6 +70,7 @@ parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
 parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
                         help='Decrease learning rate at these epochs.')
+parser.add_argument('--only-adv', action='store_true')
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -117,11 +118,13 @@ def train(model, device, train_loader, optimizer,
                                      epsilon=args.epsilon,
                                      perturb_steps=args.num_steps,
                                      beta=args.beta)
-        # true_labels = target
-        # data = torch.cat((data, adv_data), 0)
-        # labels = torch.cat((target, true_labels))
-        data = adv_data
-        labels = target
+        if args.only_adv:
+            data = adv_data
+            labels = target
+        else:
+            true_labels = target
+            data = torch.cat((data, adv_data), 0)
+            labels = torch.cat((target, true_labels))
         model.train()
         feats, logits = model(data)
         # print(feats)
@@ -301,6 +304,7 @@ def main():
                        os.path.join(model_dir, '{}_ep{}.pt'.format(args.save_model, epoch)))
             torch.save(optimizer.state_dict(),
                        os.path.join(model_dir, 'opt-{}_ep{}.tar'.format(args.save_model, epoch)))
+            print("Ep{}: Model saved as {}.".format(epoch, args.save_model))
 
 
 if __name__ == '__main__':

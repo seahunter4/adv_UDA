@@ -51,6 +51,9 @@ parser.add_argument('--save-freq', '-s', default=5, type=int, metavar='N',
                     help='save frequency')
 parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
                         help='Decrease learning rate at these epochs.')
+parser.add_argument('--save-model', default='smallCNN_cifar10_tct_advPGD',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--only-adv', action='store_true')
 
 
 args = parser.parse_args()
@@ -100,9 +103,13 @@ def train(args, model, device, train_loader, optimizer, epoch):
                                      epsilon=args.epsilon,
                                      perturb_steps=args.num_steps,
                                      beta=args.beta)
-        true_labels = target
-        data = torch.cat((data, adv_data), 0)
-        labels = torch.cat((target, true_labels))
+        if args.only_adv:
+            data = adv_data
+            labels = target
+        else:
+            true_labels = target
+            data = torch.cat((data, adv_data), 0)
+            labels = torch.cat((target, true_labels))
         _, logits = model(data)
         loss = F.cross_entropy(logits, labels)
         loss.backward()

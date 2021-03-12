@@ -15,6 +15,7 @@ from models.small_cnn import *
 from trades import *
 import numpy as np
 import time
+import datetime
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--gpu', type=str, default='0')

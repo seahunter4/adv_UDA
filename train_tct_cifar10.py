@@ -53,8 +53,14 @@ parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN/tct',
                     help='directory of stats for saving checkpoint')
 parser.add_argument('--model-dir', default='./model-cifar-smallCNN/tct',
                     help='directory of model for saving checkpoint')
+parser.add_argument('--base-dir', default='./model-cifar-smallCNN/softmax',
+                    help='directory of model for saving checkpoint')
 parser.add_argument('--save-model', default='smallCNN_cifar10_tct_advPGD',
                     help='directory of model for saving checkpoint')
+parser.add_argument('--base-model', default='softmax_01',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--checkpoint', type=int, default=100, metavar='N',
+                    help='')
 parser.add_argument('--save-freq', '-s', default=10, type=int, metavar='N',
                     help='save frequency')
 parser.add_argument('--lr-prox', type=float, default=0.5,
@@ -76,6 +82,7 @@ parser.add_argument('--margin', type=float, default=1,
 parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
 parser.add_argument('--only-adv', action='store_true')
+parser.add_argument('--fine-tune', action='store_true')
 parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
                         help='Decrease learning rate at these epochs.')
 
@@ -89,6 +96,8 @@ if not os.path.exists(model_dir):
 stats_dir = args.stats_dir
 if not os.path.exists(stats_dir):
     os.makedirs(stats_dir)
+
+
 
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
@@ -259,6 +268,12 @@ def main():
     criterion_tct = TriCenLossbyPart(10, 256)
     optimizer_tct = optim.SGD(criterion_tct.parameters(), lr=args.lr_tct)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    if args.fine_tune:
+        base_dir = args.base_dir
+        state_dict = torch.load("{}/{}_ep{}.pt".format(base_dir, args.base_model, args.checkpoint))
+        opt = torch.load("{}/opt-{}_ep{}.tar".format(base_dir, args.base_model, args.checkpoint))
+        model.load_state_dict(state_dict)
+        optimizer.load_state_dict(opt)
 
 
     natural_acc = []

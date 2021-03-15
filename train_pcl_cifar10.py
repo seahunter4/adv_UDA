@@ -52,8 +52,14 @@ parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN/pcl',
                     help='directory of stas for saving checkpoint')
 parser.add_argument('--model-dir', default='./model-cifar-smallCNN/pcl',
                     help='directory of model for saving checkpoint')
+parser.add_argument('--base-dir', default='./model-cifar-smallCNN/softmax',
+                    help='directory of model for saving checkpoint')
 parser.add_argument('--save-model', default='smallCNN_cifar10_pcl_advPGD',
                     help='directory of model for saving checkpoint')
+parser.add_argument('--base-model', default='softmax_01',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--checkpoint', type=int, default=100, metavar='N',
+                    help='')
 parser.add_argument('--save-freq', '-s', default=10, type=int, metavar='N',
                     help='save frequency')
 parser.add_argument('--lr-prox', type=float, default=0.5,
@@ -71,6 +77,7 @@ parser.add_argument('--sub-size', type=int, default=5000)
 parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
                         help='Decrease learning rate at these epochs.')
 parser.add_argument('--only-adv', action='store_true')
+parser.add_argument('--fine-tune', action='store_true')
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -259,6 +266,12 @@ def main():
     optimizer_prox = optim.SGD(criterion_prox.parameters(), lr=args.lr_prox)
     optimizer_conprox = optim.SGD(criterion_conprox.parameters(), lr=args.lr_conprox)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    if args.fine_tune:
+        base_dir = args.base_dir
+        state_dict = torch.load("{}/{}_ep{}.pt".format(base_dir, args.base_model, args.checkpoint))
+        opt = torch.load("{}/opt-{}_ep{}.tar".format(base_dir, args.base_model, args.checkpoint))
+        model.load_state_dict(state_dict)
+        optimizer.load_state_dict(opt)
 
 
     natural_acc = []

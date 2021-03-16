@@ -83,6 +83,7 @@ parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
 parser.add_argument('--only-adv', action='store_true')
 parser.add_argument('--fine-tune', action='store_true')
+parser.add_argument('--no-adv', action='store_true')
 parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
                         help='Decrease learning rate at these epochs.')
 
@@ -125,21 +126,22 @@ def train(model, device, train_loader, optimizer,
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         model.eval()
-        adv_data = generate_adv_data(model=model,
-                                     x_natural=data,
-                                     y=target,
-                                     optimizer=optimizer,
-                                     step_size=args.step_size,
-                                     epsilon=args.epsilon,
-                                     perturb_steps=args.num_steps,
-                                     beta=args.beta)
-        if args.only_adv:
-            data = adv_data
-            labels = target
-        else:
-            true_labels = target
-            data = torch.cat((data, adv_data), 0)
-            labels = torch.cat((target, true_labels))
+        if not args.no_adv:
+            adv_data = generate_adv_data(model=model,
+                                         x_natural=data,
+                                         y=target,
+                                         optimizer=optimizer,
+                                         step_size=args.step_size,
+                                         epsilon=args.epsilon,
+                                         perturb_steps=args.num_steps,
+                                         beta=args.beta)
+            if args.only_adv:
+                data = adv_data
+                labels = target
+            else:
+                true_labels = target
+                data = torch.cat((data, adv_data), 0)
+                labels = torch.cat((target, true_labels))
         model.train()
         feats, logits = model(data)
         # print("feats={}\nlogits={}".format(feats, logits))

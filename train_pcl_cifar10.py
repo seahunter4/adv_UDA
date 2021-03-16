@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import sys
 import argparse
 import datetime
 import torch
@@ -15,6 +16,7 @@ from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
 from trades import *
+from utils import Logger
 import numpy as np
 import time
 import warnings
@@ -78,6 +80,10 @@ parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
                         help='Decrease learning rate at these epochs.')
 parser.add_argument('--only-adv', action='store_true')
 parser.add_argument('--fine-tune', action='store_true')
+parser.add_argument('--log-dir', default='./log/pcl',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--log-file', default='tct.log',
+                    help='directory of model for saving checkpoint')
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -260,6 +266,7 @@ def main():
     # init model, ResNet18() can be also used here for training
     # model = WideResNet().to(device)
     model = SmallCNN().to(device)
+    sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)
     criterion_prox = Proximity(10, 256, True)
     criterion_conprox = Con_Proximity(10, 256, True)

@@ -262,6 +262,12 @@ def main():
         #                os.path.join(model_dir, 'model-res-epoch{}.pt'.format(epoch)))
         #     torch.save(optimizer.state_dict(),
         #                os.path.join(model_dir, 'opt-res-checkpoint_epoch{}.tar'.format(epoch)))
+        if epoch % args.save_freq == 0:
+            torch.save(model.state_dict(),
+                       os.path.join(model_dir, '{}_ep{}.pt'.format(args.save_model, epoch)))
+            torch.save(optimizer.state_dict(),
+                       os.path.join(model_dir, 'opt-{}_ep{}.tar'.format(args.save_model, epoch)))
+            print("Ep{}: Model saved as {}.".format(epoch, args.save_model))
 
 
 if __name__ == '__main__':

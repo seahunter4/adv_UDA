@@ -301,7 +301,7 @@ def main():
 
         natural_acc.append(natural_err_total)
         robust_acc.append(robust_err_total)
-        print('================================================================')
+
 
         file_name = os.path.join(stats_dir, '{}_stat{}.npy'.format(args.save_model, epoch))
         # np.save(file_name, np.stack((np.array(self.train_loss), np.array(self.test_loss),
@@ -318,6 +318,7 @@ def main():
             torch.save(optimizer.state_dict(),
                        os.path.join(model_dir, 'opt-{}_ep{}.tar'.format(args.save_model, epoch)))
             print("Ep{}: Model saved as {}.".format(epoch, args.save_model))
+        print('================================================================')
 
 
 if __name__ == '__main__':

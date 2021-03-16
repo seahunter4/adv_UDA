@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import sys
 import argparse
 import torch
 import torch.nn as nn
@@ -8,7 +9,7 @@ import torchvision
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-
+from utils import Logger
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
@@ -45,7 +46,9 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=1, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--model-dir', default='./model-cifar-wideResNet',
+parser.add_argument('--model-dir', default='./model-cifar-smallCNN',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--stats-dir', default='./model-cifar-smallCNN',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=5, type=int, metavar='N',
                     help='save frequency')
@@ -54,6 +57,10 @@ parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
 parser.add_argument('--save-model', default='smallCNN_cifar10_tct_advPGD',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--only-adv', action='store_true')
+parser.add_argument('--log-dir', default='./log/tct',
+                    help='directory of model for saving checkpoint')
+parser.add_argument('--log-file', default='tct.log',
+                    help='directory of model for saving checkpoint')
 
 
 args = parser.parse_args()
@@ -63,9 +70,9 @@ model_dir = args.model_dir
 if not os.path.exists(model_dir):
     os.makedirs(model_dir)
     
-log_dir = './log'
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
+stats_dir = args.stats_dir
+if not os.path.exists(stats_dir):
+    os.makedirs(stats_dir)
     
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
@@ -221,6 +228,7 @@ def main():
     # init model, ResNet18() can be also used here for training
     # model = WideResNet().to(device)
     model = SmallCNN().to(device)
+    sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
@@ -248,7 +256,7 @@ def main():
         robust_acc.append(robust_err_total)
 
         
-        file_name = os.path.join(log_dir, 'train_stats_%s.npy' % (epoch))
+        file_name = os.path.join(stats_dir, '{}_stat{}.npy'.format(args.save_model, epoch))
         # np.save(file_name, np.stack((np.array(self.train_loss), np.array(self.test_loss),
         #                              np.array(self.train_acc), np.array(self.test_acc),
         #                              np.array(self.elasticity), np.array(self.x_grads),

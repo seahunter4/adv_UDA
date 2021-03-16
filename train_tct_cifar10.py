@@ -124,7 +124,7 @@ def train(model, device, train_loader, optimizer,
           criterion_tct, optimizer_tct, epoch):
     start_time = time.time()
     for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(device), target.to(device)
+        data, labels = data.to(device), target.to(device)
         model.eval()
         if not args.no_adv:
             adv_data = generate_adv_data(model=model,
@@ -137,11 +137,10 @@ def train(model, device, train_loader, optimizer,
                                          beta=args.beta)
             if args.only_adv:
                 data = adv_data
-                labels = target
             else:
-                true_labels = target
+                true_labels = labels
                 data = torch.cat((data, adv_data), 0)
-                labels = torch.cat((target, true_labels))
+                labels = torch.cat((labels, true_labels))
         model.train()
         feats, logits = model(data)
         # print("feats={}\nlogits={}".format(feats, logits))

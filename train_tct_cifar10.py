@@ -129,13 +129,13 @@ test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_si
 def train(model, device, train_loader, optimizer,
           criterion_tct, optimizer_tct, epoch):
     start_time = time.time()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, labels = data.to(device), target.to(device)
+    for batch_idx, (data, labels) in enumerate(train_loader):
+        data, labels = data.to(device), labels.to(device)
         model.eval()
         if not args.no_adv:
             adv_data = generate_adv_data(model=model,
                                          x_natural=data,
-                                         y=target,
+                                         y=labels,
                                          optimizer=optimizer,
                                          step_size=args.step_size,
                                          epsilon=args.epsilon,

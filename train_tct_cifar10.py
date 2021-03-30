@@ -84,6 +84,7 @@ parser.add_argument('--margin', type=float, default=1,
                     help="margin")
 parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
+parser.add_argument('--feat-size', type=int, default=256)
 parser.add_argument('--only-adv', action='store_true')
 parser.add_argument('--fine-tune', action='store_true')
 parser.add_argument('--no-adv', action='store_true')
@@ -280,7 +281,7 @@ def main():
 
     sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)
-    criterion_tct = TriCenLossbyPart(10, 256)
+    criterion_tct = TriCenLossbyPart(10, args.feat_size)
     optimizer_tct = optim.SGD(criterion_tct.parameters(), lr=args.lr_tct)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     if args.fine_tune:

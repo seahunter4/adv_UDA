@@ -89,5 +89,5 @@ class WideResNet(nn.Module):
         out = self.relu(self.bn1(out))
         out = F.avg_pool2d(out, 8)
         out = out.view(-1, self.nChannels)
-        print("size {} out = {}".format(out.size(),out))
+        # print("size {} out = {}".format(out.size(),out))
         return out, self.fc(out)

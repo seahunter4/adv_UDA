@@ -75,14 +75,15 @@ parser.add_argument('--lr-conprox', type=float, default=0.00001,
                     help="learning rate for Con-Proximity Loss")
 parser.add_argument('--weight-conprox', type=float, default=0.00001,
                     help="weight for Con-Proximity Loss")
-parser.add_argument('--lr-tct', type=float, default=0.5,
+parser.add_argument('--lr-tla', type=float, default=0.5,
                     help="learning rate for Con-Proximity Loss")
 parser.add_argument('--weight-xent', type=float, default=1,
                     help="weight for Cross-Entropy Loss")
-parser.add_argument('--weight-tct', type=float, default=1,
+parser.add_argument('--weight-tla', type=float, default=1,
                     help="weight for Con-Proximity Loss")
 parser.add_argument('--margin', type=float, default=1,
                     help="margin")
+parser.add_argument('--feat-size', type=int, default=256)
 parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
 parser.add_argument('--only-adv', action='store_true')

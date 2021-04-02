@@ -154,7 +154,7 @@ def train(model, device, train_loader, optimizer,
         # print("feats={}\nlogits={}".format(feats, logits))
         loss_xent = F.cross_entropy(logits, labels)
         loss_tla = criterion_tla(feats, labels, args.margin)
-        loss = args.weight_xent * loss_xent + args.weight_tct * loss_tla
+        loss = args.weight_xent * loss_xent + args.weight_tla * loss_tla
         optimizer.zero_grad()
         optimizer_tla.zero_grad()
 
@@ -281,7 +281,7 @@ def main():
 
     sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)
-    criterion_tla = TripletLoss(10, 256)
+    criterion_tla = TripletLoss(10, args.feat_size)
     optimizer_tla = optim.SGD(criterion_tla.parameters(), lr=args.lr_tla)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     if args.fine_tune:

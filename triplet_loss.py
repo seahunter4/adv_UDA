@@ -14,7 +14,7 @@ class TripletLoss(nn.Module):
         #     self.centers = nn.Parameter(torch.randn(self.num_classes, self.feat_dim))
 
     def forward(self, x, labels, margin):
-        batch_size = x.size(0)/2
+        batch_size = x.size(0) // 2
         x = F.normalize(x, p=2, dim=1)
         ori, adv = x.chunk(2, dim=0)
         # centers = F.normalize(self.centers, p=2, dim=1)

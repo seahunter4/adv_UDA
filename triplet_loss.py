@@ -22,7 +22,7 @@ class TripletLoss(nn.Module):
                   torch.pow(ori, 2).sum(dim=1, keepdim=True).expand(batch_size, batch_size).t()
         distmat.addmm_(1, -2, adv, ori.t())
 
-        classes = torch.arange(self.num_classes).long()
+        # classes = torch.arange(self.num_classes).long()
         # if self.use_gpu:
         #     classes = classes.cuda()
         print("ori labels: {}".format(labels))

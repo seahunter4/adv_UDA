@@ -129,6 +129,34 @@ testset = torchvision.datasets.CIFAR10(root='./data_attack/cifar10', train=False
 test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, num_workers=4)
 
 
+def tla_loss(feats, labels, margin):
+    batch_size = feats.size(0) // 2
+    x = F.normalize(feats, p=2, dim=1)
+    ori, adv = x.chunk(2, dim=0)
+    distmat = torch.pow(adv, 2).sum(dim=1, keepdim=True).expand(batch_size, batch_size) + \
+              torch.pow(ori, 2).sum(dim=1, keepdim=True).expand(batch_size, batch_size).t()
+    distmat.addmm_(1, -2, adv, ori.t())
+    print("ori labels: {}".format(labels))
+    labels = labels.unsqueeze(1).expand(batch_size, batch_size)
+    print("now labels: {}".format(labels))
+    mask = labels.eq(labels.expand(batch_size, batch_size))
+    print("mask: {}".format(mask))
+    zero = torch.tensor([0.]).cuda()
+    dist = []
+    for i in range(batch_size):
+        congener_dist = distmat[i][i]
+        congener_marks = mask[i].clone()
+        inhomogen_marks = (-1 * congener_marks + 1).bool()
+        nearst_inhomogen_dist = torch.min(distmat[i][inhomogen_marks])
+        congener_dist = congener_dist.clamp(min=1e-12, max=1e+12)
+        nearst_inhomogen_dist = nearst_inhomogen_dist.clamp(min=1e-12, max=1e+12)
+        dist.append(max(congener_dist - nearst_inhomogen_dist + margin, zero))
+    # print(dist)
+    dist = torch.cat(dist)
+    loss = dist.mean()
+    return loss
+
+
 def train(model, device, train_loader, optimizer,
           criterion_tla, epoch):
     start_time = time.time()
@@ -145,16 +173,17 @@ def train(model, device, train_loader, optimizer,
                                          perturb_steps=args.num_steps,
                                          beta=args.beta)
             if args.only_adv:
-                data = adv_data
+                input_data = adv_data
+                input_labels = labels
             else:
                 true_labels = labels
-                data = torch.cat((data, adv_data), 0)
-                labels = torch.cat((labels, true_labels))
+                input_data = torch.cat((data, adv_data), 0)
+                input_labels = torch.cat((labels, true_labels))
         model.train()
-        feats, logits = model(data)
+        feats, logits = model(input_data)
         # print("feats={}\nlogits={}".format(feats, logits))
-        loss_xent = F.cross_entropy(logits, labels)
-        loss_tla = criterion_tla(feats, labels, args.margin)
+        loss_xent = F.cross_entropy(logits, input_labels)
+        loss_tla = tla_loss(feats, labels, args.margin)
         loss = args.weight_xent * loss_xent + args.weight_tla * loss_tla
         optimizer.zero_grad()
 

@@ -130,7 +130,7 @@ test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_si
 
 
 def train(model, device, train_loader, optimizer,
-          criterion_tla, optimizer_tla, epoch):
+          criterion_tla, epoch):
     start_time = time.time()
     for batch_idx, (data, labels) in enumerate(train_loader):
         data, labels = data.to(device), labels.to(device)
@@ -157,18 +157,16 @@ def train(model, device, train_loader, optimizer,
         loss_tla = criterion_tla(feats, labels, args.margin)
         loss = args.weight_xent * loss_xent + args.weight_tla * loss_tla
         optimizer.zero_grad()
-        optimizer_tla.zero_grad()
 
         loss.backward()
         optimizer.step()
-        optimizer_tla.step()
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} tct: {:6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss.item(),
-                       loss_xent.item(), loss_tct.item(),
+                       loss_xent.item(), loss_tla.item(),
                 datetime.timedelta(seconds=round(time.time() - start_time))))
             start_time = time.time()
 
@@ -283,7 +281,6 @@ def main():
     sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)
     criterion_tla = TripletLoss(10, args.feat_size)
-    optimizer_tla = optim.SGD(criterion_tla.parameters(), lr=args.lr_tla)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     if args.fine_tune:
         base_dir = args.base_dir
@@ -300,13 +297,12 @@ def main():
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
         adjust_learning_rate(optimizer, epoch)
-        adjust_learning_rate(optimizer_tla, epoch)
 
         start_time = time.time()
 
         # adversarial training
         train(model, device, train_loader, optimizer,
-              criterion_tla, optimizer_tla, epoch)
+              criterion_tla, epoch)
 
         # evaluation on natural examples
         print('================================================================')

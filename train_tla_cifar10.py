@@ -13,6 +13,7 @@ from torch.autograd import Variable
 from proximity import Proximity
 from contrastive_proximity import Con_Proximity
 from triplet_center_loss import TriCenLossbyPart
+from triplet_loss import TripletLoss
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
@@ -128,7 +129,7 @@ test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_si
 
 
 def train(model, device, train_loader, optimizer,
-          criterion_tct, optimizer_tct, epoch):
+          criterion_tla, optimizer_tla, epoch):
     start_time = time.time()
     for batch_idx, (data, labels) in enumerate(train_loader):
         data, labels = data.to(device), labels.to(device)
@@ -152,14 +153,14 @@ def train(model, device, train_loader, optimizer,
         feats, logits = model(data)
         # print("feats={}\nlogits={}".format(feats, logits))
         loss_xent = F.cross_entropy(logits, labels)
-        loss_tct = criterion_tct(feats, labels, args.margin)
-        loss = args.weight_xent * loss_xent + args.weight_tct * loss_tct
+        loss_tla = criterion_tla(feats, labels, args.margin)
+        loss = args.weight_xent * loss_xent + args.weight_tct * loss_tla
         optimizer.zero_grad()
-        optimizer_tct.zero_grad()
+        optimizer_tla.zero_grad()
 
         loss.backward()
         optimizer.step()
-        optimizer_tct.step()
+        optimizer_tla.step()
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:
@@ -280,8 +281,8 @@ def main():
 
     sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)
-    criterion_tct = TriCenLossbyPart(10, 256)
-    optimizer_tct = optim.SGD(criterion_tct.parameters(), lr=args.lr_tct)
+    criterion_tla = TripletLoss(10, 256)
+    optimizer_tla = optim.SGD(criterion_tla.parameters(), lr=args.lr_tla)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     if args.fine_tune:
         base_dir = args.base_dir
@@ -298,13 +299,13 @@ def main():
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
         adjust_learning_rate(optimizer, epoch)
-        adjust_learning_rate(optimizer_tct, epoch)
+        adjust_learning_rate(optimizer_tla, epoch)
 
         start_time = time.time()
 
         # adversarial training
         train(model, device, train_loader, optimizer,
-              criterion_tct, optimizer_tct, epoch)
+              criterion_tla, optimizer_tla, epoch)
 
         # evaluation on natural examples
         print('================================================================')
@@ -313,7 +314,7 @@ def main():
         # eval_test(model, device, test_loader)
         natural_err_total, robust_err_total = eval_adv_test_whitebox(model, device, test_loader)
 
-        print('using time:', time.time() - start_time)
+        print('using time:', datetime.timedelta(seconds=round(time.time() - start_time)))
 
         natural_acc.append(natural_err_total)
         robust_acc.append(robust_err_total)

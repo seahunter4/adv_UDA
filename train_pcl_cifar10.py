@@ -24,6 +24,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--gpu', type=str, default='0')
+parser.add_argument('--network', type=str, default='smallCNN')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
@@ -265,7 +266,12 @@ def eval_adv_test_whitebox(model, device, test_loader):
 def main():
     # init model, ResNet18() can be also used here for training
     # model = WideResNet().to(device)
-    model = SmallCNN().to(device)
+    if args.network == 'smallCNN':
+        model = SmallCNN().to(device)
+    elif args.network == 'wideResNet':
+        model = WideResNet().to(device)
+    elif args.network == 'resnet':
+        model = ResNet().to(device)
     sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)
     criterion_prox = Proximity(10, 256, True)

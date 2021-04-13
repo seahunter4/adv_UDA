@@ -85,6 +85,7 @@ parser.add_argument('--log-dir', default='./log/pcl',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--log-file', default='tct.log',
                     help='directory of model for saving checkpoint')
+parser.add_argument('--feat-size', type=int, default=256)
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu

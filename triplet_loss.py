@@ -15,7 +15,7 @@ class TripletLoss(nn.Module):
 
     def forward(self, x, labels, margin):
         batch_size = x.size(0) // 2
-        x = F.normalize(x, p=2, dim=1)
+        # x = F.normalize(x, p=2, dim=1)
         ori, adv = x.chunk(2, dim=0)
         # centers = F.normalize(self.centers, p=2, dim=1)
         distmat = torch.pow(adv, 2).sum(dim=1, keepdim=True).expand(batch_size, batch_size) + \

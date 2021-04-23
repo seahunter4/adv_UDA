@@ -94,8 +94,8 @@ parser.add_argument('--log-dir', default='./log/tct',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--log-file', default='tct.log',
                     help='directory of model for saving checkpoint')
-parser.add_argument('--adv_train_iters', type=int, default=10)
-parser.add_argument('--adv_eval_iters', type=int, default=7)
+parser.add_argument('--adv-train-iters', type=int, default=10)
+parser.add_argument('--adv-eval-iters', type=int, default=7)
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -315,7 +315,7 @@ def main():
         # eval_train(model, device, train_loader)
         # eval_test(model, device, test_loader)
         natural_err_total, robust_err_total = eval_adv_test_whitebox(model, device, test_loader)
-        with open(os.path.join(stats_dir, '{}.txt'.format(args.save_model))) as f:
+        with open(os.path.join(stats_dir, '{}.txt'.format(args.save_model)), "w") as f:
             f.write("{} {} {}\n".format(epoch, natural_err_total, robust_err_total))
 
         print('using time:', time.time() - start_time)

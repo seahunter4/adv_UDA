@@ -131,9 +131,9 @@ def train(model, device, train_loader, optimizer,
                                      x_natural=data,
                                      y=target,
                                      optimizer=optimizer,
-                                     step_size=args.adv_train_iters,
+                                     step_size=args.step_size,
                                      epsilon=args.epsilon,
-                                     perturb_steps=args.num_steps,
+                                     perturb_steps=args.adv_train_iters,
                                      beta=args.beta)
         if args.only_adv:
             data = adv_data

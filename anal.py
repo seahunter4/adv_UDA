@@ -17,6 +17,7 @@ if __name__ == "__main__":
             adv_acc = float(adv_acc)
             ind = int(ind)
             triplets.append((ind, clean_acc, adv_acc))
+            line = f.readline().rstrip()
     triplets.sort(key=lambda t: (t[2], t[1]), reverse=True)
     for i in range(10):
         print("{}: {:4f} {:4f}".format(ind, clean_acc*100, adv_acc*100))

@@ -29,7 +29,7 @@ class VGG(nn.Module):
         out = self.classifier(out)
         y = self.fc(out)
 
-        return y, out
+        return out, y
 
     def _make_layers(self, cfg, channel=3):
         layers = []

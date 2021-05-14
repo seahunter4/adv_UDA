@@ -67,14 +67,6 @@ parser.add_argument('--checkpoint', type=int, default=100, metavar='N',
                     help='')
 parser.add_argument('--save-freq', '-s', default=10, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--lr-prox', type=float, default=0.5,
-                    help="learning rate for Proximity Loss")
-parser.add_argument('--weight-prox', type=float, default=1,
-                    help="weight for Proximity Loss")
-parser.add_argument('--lr-conprox', type=float, default=0.00001,
-                    help="learning rate for Con-Proximity Loss")
-parser.add_argument('--weight-conprox', type=float, default=0.00001,
-                    help="weight for Con-Proximity Loss")
 parser.add_argument('--lr-tla', type=float, default=0.5,
                     help="learning rate for Con-Proximity Loss")
 parser.add_argument('--weight-xent', type=float, default=1,
@@ -194,7 +186,7 @@ def train(model, device, train_loader, optimizer,
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} tct: {:6f} takes {}'.format(
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} tla: {:6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss.item(),
                        loss_xent.item(), loss_tla.item(),

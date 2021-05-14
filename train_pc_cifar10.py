@@ -10,9 +10,8 @@ import torchvision
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-from proximity import Proximity
-from contrastive_proximity import Con_Proximity
-from triplet_center_loss import TriCenLossbyPart
+from hard_margin_loss import MarginLoss
+from margin_loss_soft_logit import MarginLoss as LogitMargin
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
@@ -53,11 +52,11 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN/tct',
+parser.add_argument('--stats-dir', default='./stats-cifar-vgg13/pc',
                     help='directory of stats for saving checkpoint')
-parser.add_argument('--model-dir', default='./model-cifar-smallCNN/tct',
+parser.add_argument('--model-dir', default='./model-cifar-vgg13/pc',
                     help='directory of model for saving checkpoint')
-parser.add_argument('--base-dir', default='./model-cifar-smallCNN/softmax',
+parser.add_argument('--base-dir', default='./model-cifar-vgg13/softmax',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-model', default='smallCNN_cifar10_tct_advPGD',
                     help='directory of model for saving checkpoint')
@@ -67,21 +66,11 @@ parser.add_argument('--checkpoint', type=int, default=100, metavar='N',
                     help='')
 parser.add_argument('--save-freq', '-s', default=10, type=int, metavar='N',
                     help='save frequency')
-parser.add_argument('--lr-prox', type=float, default=0.5,
-                    help="learning rate for Proximity Loss")
-parser.add_argument('--weight-prox', type=float, default=1,
-                    help="weight for Proximity Loss")
-parser.add_argument('--lr-conprox', type=float, default=0.00001,
-                    help="learning rate for Con-Proximity Loss")
-parser.add_argument('--weight-conprox', type=float, default=0.00001,
-                    help="weight for Con-Proximity Loss")
-parser.add_argument('--lr-tct', type=float, default=0.5,
-                    help="learning rate for Con-Proximity Loss")
-parser.add_argument('--weight-xent', type=float, default=1,
+parser.add_argument('--weight-logit-margin', type=float, default=0.05,
                     help="weight for Cross-Entropy Loss")
-parser.add_argument('--weight-tct', type=float, default=1,
+parser.add_argument('--weight-c-margin', type=float, default=1,
                     help="weight for Con-Proximity Loss")
-parser.add_argument('--margin', type=float, default=1,
+parser.add_argument('--margin', type=float, default=0.995,
                     help="margin")
 parser.add_argument('--sub-sample', action='store_true')
 parser.add_argument('--sub-size', type=int, default=5000)
@@ -89,7 +78,7 @@ parser.add_argument('--feat-size', type=int, default=256)
 parser.add_argument('--only-adv', action='store_true')
 parser.add_argument('--fine-tune', action='store_true')
 parser.add_argument('--no-adv', action='store_true')
-parser.add_argument('--schedule', type=int, nargs='+', default=[142, 230, 360],
+parser.add_argument('--schedule', type=int, nargs='+', default=[50, 100],
                         help='Decrease learning rate at these epochs.')
 parser.add_argument('--log-dir', default='./log/tct',
                     help='directory of model for saving checkpoint')
@@ -108,8 +97,6 @@ if not os.path.exists(model_dir):
 stats_dir = args.stats_dir
 if not os.path.exists(stats_dir):
     os.makedirs(stats_dir)
-
-
 
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
@@ -132,7 +119,7 @@ test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_si
 
 
 def train(model, device, train_loader, optimizer,
-          criterion_tct, optimizer_tct, epoch):
+          logit_margin, c_margin, epoch):
     start_time = time.time()
     for batch_idx, (data, labels) in enumerate(train_loader):
         data, labels = data.to(device), labels.to(device)
@@ -153,24 +140,21 @@ def train(model, device, train_loader, optimizer,
                 data = torch.cat((data, adv_data), 0)
                 labels = torch.cat((labels, true_labels))
         model.train()
-        feats, logits = model(data)
+        _, logits = model(data)
         # print("feats={}\nlogits={}".format(feats, logits))
-        loss_xent = F.cross_entropy(logits, labels)
-        loss_tct = criterion_tct(feats, labels, args.margin)
-        loss = args.weight_xent * loss_xent + args.weight_tct * loss_tct
+        # loss_xent = F.cross_entropy(logits, labels)
+        m_loss = c_margin(logits, labels)
+        logit_m_loss = logit_margin(logits, labels)
+        batch_loss = args.weight_c_margin * m_loss + args.weight_logit_margin * logit_m_loss
         optimizer.zero_grad()
-        optimizer_tct.zero_grad()
-
-        loss.backward()
+        batch_loss.backward()
         optimizer.step()
-        optimizer_tct.step()
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} tct: {:6f} takes {}'.format(
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(train_loader), loss.item(),
-                       loss_xent.item(), loss_tct.item(),
+                       100. * batch_idx / len(train_loader), batch_loss.item(),
                 datetime.timedelta(seconds=round(time.time() - start_time))))
             start_time = time.time()
 
@@ -281,12 +265,16 @@ def main():
         model = WideResNet().to(device)
     elif args.network == 'resnet':
         model = ResNet().to(device)
+    else:
+        model = VGG(args.network)
+
 
     sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)
-    criterion_tct = TriCenLossbyPart(10, args.feat_size)
-    optimizer_tct = optim.SGD(criterion_tct.parameters(), lr=args.lr_tct)
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    logit_margin = LogitMargin()
+    c_margin = MarginLoss(margin=args.margin)
+    # optimizer = optim.SGD(criterion_tct.parameters(), lr=args.lr_tct)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
     if args.fine_tune:
         base_dir = args.base_dir
         state_dict = torch.load("{}/{}_ep{}.pt".format(base_dir, args.base_model, args.checkpoint))
@@ -294,21 +282,18 @@ def main():
         model.load_state_dict(state_dict)
         optimizer.load_state_dict(opt)
 
-
-
     natural_acc = []
     robust_acc = []
 
     for epoch in range(1, args.epochs + 1):
         # adjust learning rate for SGD
         adjust_learning_rate(optimizer, epoch)
-        adjust_learning_rate(optimizer_tct, epoch)
+        # adjust_learning_rate(optimizer_tct, epoch)
 
         start_time = time.time()
 
         # adversarial training
-        train(model, device, train_loader, optimizer,
-              criterion_tct, optimizer_tct, epoch)
+        train(model, device, train_loader, optimizer, logit_margin, c_margin, epoch)
 
         # evaluation on natural examples
         print('================================================================')

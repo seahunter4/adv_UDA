@@ -201,7 +201,7 @@ def adjust_learning_rate(optimizer, epoch):
     """decrease the learning rate"""
     if epoch in args.schedule:
         for param_group in optimizer.param_groups:
-            param_group['lr'] *= 0.1
+            param_group['lr'] *= 0.2
 
 
 def _pgd_whitebox(model,
@@ -278,9 +278,9 @@ def main():
     if args.fine_tune:
         base_dir = args.base_dir
         state_dict = torch.load("{}/{}_ep{}.pt".format(base_dir, args.base_model, args.checkpoint))
-        opt = torch.load("{}/opt-{}_ep{}.tar".format(base_dir, args.base_model, args.checkpoint))
+        # opt = torch.load("{}/opt-{}_ep{}.tar".format(base_dir, args.base_model, args.checkpoint))
         model.load_state_dict(state_dict)
-        optimizer.load_state_dict(opt)
+        # optimizer.load_state_dict(opt)
 
     natural_acc = []
     robust_acc = []

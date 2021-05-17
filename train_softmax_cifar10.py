@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
+from models.vgg_tiny import *
 from trades import *
 import numpy as np
 import time
@@ -19,6 +20,7 @@ import datetime
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--gpu', type=str, default='0')
+parser.add_argument('--network', type=str, default='smallCNN')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
@@ -55,6 +57,7 @@ parser.add_argument('--stats-dir', default='./stats-cifar-smallCNN/softmax',
                     help='directory of stas for saving checkpoint')
 parser.add_argument('--model-dir', default='./model-cifar-smallCNN/softmax',
                     help='directory of model for saving checkpoint')
+parser.add_argument('--feat-size', type=int, default=256)
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -154,7 +157,14 @@ def adjust_learning_rate(optimizer, epoch):
 def main():
     # init model, ResNet18() can be also used here for training
     # model = WideResNet().to(device)
-    model = SmallCNN().to(device)
+    if args.network == 'smallCNN':
+        model = SmallCNN().to(device)
+    elif args.network == 'wideResNet':
+        model = WideResNet().to(device)
+    elif args.network == 'resnet':
+        model = ResNet().to(device)
+    else:
+        model = VGG(args.network)
     print(model)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 

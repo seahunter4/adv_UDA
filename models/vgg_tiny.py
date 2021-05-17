@@ -18,7 +18,7 @@ class VGG(nn.Module):
         self.classifier = nn.Sequential(
             # nn. Flatten(),
             nn.Dropout(),
-            nn.Linear(2048, 512),
+            nn.Linear(512, 512),
             nn.ReLU(True),
         )
         self.fc = nn.Linear(512, num_classes)

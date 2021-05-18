@@ -266,7 +266,7 @@ def main():
     elif args.network == 'resnet':
         model = ResNet().to(device)
     else:
-        model = VGG(args.network).to(device)
+        model = VGG(args.network, num_classes=10).to(device)
 
 
     sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))

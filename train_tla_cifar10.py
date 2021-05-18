@@ -300,6 +300,8 @@ def main():
         model = WideResNet().to(device)
     elif args.network == 'resnet':
         model = ResNet().to(device)
+    else:
+        model = VGG(args.network, num_classes=10).to(device)
 
     sys.stdout = Logger(os.path.join(args.log_dir, args.log_file))
     print(model)

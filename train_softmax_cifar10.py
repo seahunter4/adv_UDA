@@ -164,7 +164,7 @@ def main():
     elif args.network == 'resnet':
         model = ResNet().to(device)
     else:
-        model = VGG(args.network).to(device)
+        model = VGG(args.network, num_classes=10).to(device)
     print(model)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 

@@ -15,6 +15,7 @@ from contrastive_proximity import Con_Proximity
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
+from models.vgg_tiny import *
 from trades import *
 from utils import Logger
 import numpy as np

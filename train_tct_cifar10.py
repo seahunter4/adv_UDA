@@ -16,6 +16,7 @@ from triplet_center_loss import TriCenLossbyPart
 from models.wideresnet import *
 from models.resnet import *
 from models.small_cnn import *
+from models.vgg_tiny import *
 from trades import *
 import numpy as np
 import time

@@ -23,11 +23,15 @@ class MarginLoss(nn.Module):
         """
         batch_size = x.size(0)
         classes = torch.arange(self.num_classes).long()
+        print("classes shape {}".format(classes.shape))
         if self.use_gpu:
             classes = classes.cuda()
         labels = labels.unsqueeze(1).expand(batch_size, self.num_classes)
+        print("labels shape {}".format(labels.shape))
         mask = labels.eq(classes.expand(batch_size, self.num_classes))
+        print("mask shape {}".format(mask.shape))
         x = F.softmax(x, dim=1)
+        print("x shape {}".format(x.shape))
         p_gt = torch.mul(mask.float(), x).sum(dim=1, keepdim=True).expand(batch_size, self.num_classes)
 
         diff = self.margin + x - p_gt

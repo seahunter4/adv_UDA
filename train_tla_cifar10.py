@@ -90,6 +90,8 @@ parser.add_argument('--log-file', default='tct.log',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--adv-train-iters', type=int, default=10)
 parser.add_argument('--adv-eval-iters', type=int, default=7)
+parser.add_argument('--homo-constrain', action='store_true')
+parser.add_argument('--inhomo-constrain', action='store_true')
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -149,6 +151,12 @@ def tla_loss(feats, labels, margin):
     # print(dist)
     dist = torch.cat(dist)
     loss = dist.mean()
+    if args.homo_constrain:
+        ori_distmat = F.pdist(ori, p=2)
+        loss += ori_distmat.mean()
+    if args.inhomo_constrain:
+        adv_distmat = F.pdist(adv, p=2)
+        loss += adv_distmat.mean()
     return loss
 
 

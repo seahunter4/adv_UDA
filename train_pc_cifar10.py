@@ -108,9 +108,11 @@ transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 transform_test = transforms.Compose([
     transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 trainset = torchvision.datasets.CIFAR10(root='./data_attack/cifar10', train=True, download=True, transform=transform_train)
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=4)
@@ -281,6 +283,8 @@ def main():
         # opt = torch.load("{}/opt-{}_ep{}.tar".format(base_dir, args.base_model, args.checkpoint))
         model.load_state_dict(state_dict)
         # optimizer.load_state_dict(opt)
+    print("Initial testing:")
+    eval_adv_test_whitebox(model, device, test_loader)
 
     natural_acc = []
     robust_acc = []

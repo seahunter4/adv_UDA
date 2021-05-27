@@ -257,6 +257,8 @@ def main():
         # eval_train(model, device, train_loader)
         # eval_test(model, device, test_loader)
         natural_err_total, robust_err_total = eval_adv_test_whitebox(model, device, test_loader)
+        with open(os.path.join(stats_dir, '{}.txt'.format(args.save_model)), "a") as f:
+            f.write("{} {} {}\n".format(epoch, natural_err_total, robust_err_total))
         
         print('using time:', time.time()-start_time)
         

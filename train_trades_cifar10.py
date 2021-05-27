@@ -35,6 +35,8 @@ parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
+parser.add_argument('--adv-train-iters', type=int, default=10)
+parser.add_argument('--adv-eval-iters', type=int, default=7)
 parser.add_argument('--epsilon', default=0.031,
                     help='perturbation')
 parser.add_argument('--num-steps', default=10,
@@ -109,7 +111,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
                                      optimizer=optimizer,
                                      step_size=args.step_size,
                                      epsilon=args.epsilon,
-                                     perturb_steps=args.num_steps,
+                                     perturb_steps=args.adv_train_iters,
                                      beta=args.beta)
         if args.only_adv:
             data = adv_data
@@ -178,7 +180,7 @@ def _pgd_whitebox(model,
                   X,
                   y,
                   epsilon=args.epsilon,
-                  num_steps=args.num_steps,
+                  num_steps=args.adv_eval_iters,
                   step_size=args.step_size):
     _, out = model(X)
     err = (out.data.max(1)[1] != y.data).float().sum()

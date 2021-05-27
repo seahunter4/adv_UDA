@@ -201,7 +201,7 @@ def train(model, device, train_loader, optimizer,
 
         # print progress
         if (batch_idx+1) % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} tla: {:6f} takes {}'.format(
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} ce: {:.6f} ijc_tl: {:6f} takes {}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss.item(),
                        loss_xent.item(), loss_tla.item(),

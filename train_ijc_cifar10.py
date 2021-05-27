@@ -154,7 +154,7 @@ def tla_loss(feats, labels, margin):
         # nearst_inhomogen_dist = nearst_inhomogen_dist.clamp(min=1e-12, max=1e+12)
         inhomo_dist = inhomo_dist.clamp(min=1e-12, max=1e+12)
         dist.append(max(congener_dist - inhomo_dist + margin, zero))
-    # print(dist)
+    print(dist)
     dist = torch.cat(dist)
     loss = dist.mean()
     if args.homo_constrain:

@@ -135,9 +135,9 @@ def tla_loss(feats, labels, margin):
               torch.pow(ori, 2).sum(dim=1, keepdim=True).expand(batch_size, batch_size).t()
     distmat.addmm_(1, -2, adv, ori.t())
     # print("ori labels: {}".format(labels))
-    labels = labels.unsqueeze(1).expand(batch_size, batch_size)
+    labels_expand = labels.unsqueeze(1).expand(batch_size, batch_size)
     # print("now labels: {}".format(labels))
-    mask = labels.eq(labels.t())
+    mask = labels_expand.eq(labels_expand.t())
     # print("mask: {}".format(mask))
     zero = torch.tensor([0.]).cuda()
     dist = []

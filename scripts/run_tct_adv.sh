@@ -1,0 +1,21 @@
+python train_tct_cifar10.py \
+       --network smallCNN \
+       --gpu 1 \
+       --batch-size 256 \
+       --epochs 150 \
+       --lr 0.1 \
+       --lr-tct 0.1 \
+       --weight-tct 0.1 \
+       --weight-xent 1 \
+       --feat-size 256 \
+       --margin 1 \
+       --adv-train-iters 10 \
+       --adv-eval-iters 7 \
+       --schedule 40 80 120 \
+       --log-interval 20 \
+       --save-freq 20 \
+       --stats-dir ./stats-cifar-smallCNN/tct \
+       --model-dir ./model-cifar-smallCNN/tct \
+       --save-model tct_joint_l2_1+01_pgd-7_10 \
+       --log-dir ./log/tct \
+       --log-file tct_joint_l2_1+01_pgd-7_10.log

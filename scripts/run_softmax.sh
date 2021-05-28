@@ -1,0 +1,12 @@
+python train_softmax_cifar10.py \
+       --gpu 2 \
+       --network VGG13 \
+       --batch-size 256 \
+       --epochs 150 \
+       --lr 0.01 \
+       --schedule 50 100 \
+       --log-interval 15 \
+       --save-freq 15 \
+       --model-dir ./model-cifar-vgg13/softmax \
+       --stats-dir ./stats-cifar-vgg13/softmax \
+       --save-model softmax

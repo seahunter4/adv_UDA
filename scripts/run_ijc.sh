@@ -1,0 +1,23 @@
+python train_ijc_cifar10.py \
+       --network smallCNN \
+       --gpu 2 \
+       --batch-size 256 \
+       --epochs 150 \
+       --lr 0.1 \
+       --lr-tla 0.1 \
+       --weight-tla 0.5 \
+       --weight-xent 1 \
+       --feat-size 256 \
+       --adv-train-iters 10 \
+       --adv-eval-iters 7 \
+       --margin 1 \
+       --schedule 40 80 120 \
+       --log-interval 20 \
+       --save-freq 20 \
+       --model-dir ./model-cifar-smallCNN/ijc \
+       --stats-dir ./stats-cifar-smallCNN/ijc \
+       --save-model ijc_joint_l2_1+05_pgd-7_10_both-cons \
+       --log-dir ./log/ijc \
+       --log-file ijc_joint_l2_1+05_pgd-7_10_both-cons.log \
+       --inhomo-cons \
+       --homo-cons 

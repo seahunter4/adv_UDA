@@ -1,0 +1,16 @@
+python train_trades_cifar10.py \
+       --gpu 0 \
+       --batch-size 256 \
+       --network smallCNN \
+       --epochs 150 \
+       --lr 0.1 \
+       --adv-train-iters 10 \
+       --adv-eval-iters 7 \
+       --schedule 40 80 120 \
+       --log-interval 15 \
+       --save-freq 15 \
+       --model-dir ./model-cifar-smallCNN/softmax \
+       --stats-dir ./stats-cifar-smallCNN/softmax \
+       --save-model at_joint_pgd-7_10 \
+       --log-dir ./log/softmax \
+       --log-file at_joint_pgd-7_10

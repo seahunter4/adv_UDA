@@ -1,0 +1,25 @@
+python train_pc_cifar10.py \
+       --network VGG13 \
+       --gpu 2 \
+       --batch-size 256 \
+       --epochs 150 \
+       --lr 0.01 \
+       --weight-logit-margin 0.05 \
+       --weight-c-margin 1 \
+       --feat-size 512 \
+       --margin 0.995 \
+       --adv-train-iters 10 \
+       --adv-eval-iters 7 \
+       --schedule 50 100 \
+       --log-interval 10 \
+       --save-freq 10 \
+       --stats-dir ./stats-cifar-vgg13/pc \
+       --model-dir ./model-cifar-vgg13/pc \
+       --save-model pc_joint_1+005_pgd-7_10 \
+       --log-dir ./log/pc \
+       --log-file v13_pc_joint_1+005_pgd-7_10.log \
+       --fine-tune \
+       --base-dir ./model-cifar-vgg13/softmax \
+       --base-model softmax \
+       --checkpoint 135 \
+       --no-adv

@@ -1,0 +1,23 @@
+python train_tla_cifar10.py \
+       --network smallCNN \
+       --gpu 2 \
+       --batch-size 256 \
+       --epochs 150 \
+       --lr 0.1 \
+       --lr-tla 0.1 \
+       --weight-tla 0.5 \
+       --weight-xent 1 \
+       --feat-size 256 \
+       --adv-train-iters 10 \
+       --adv-eval-iters 7 \
+       --margin 1 \
+       --schedule 40 80 120 \
+       --log-interval 10 \
+       --save-freq 10 \
+       --model-dir ./model-cifar-smallCNN/tla \
+       --stats-dir ./stats-cifar-smallCNN/tla \
+       --save-model tla_joint_l2_1+05_pgd-7_10_both-cons \
+       --log-dir ./log/tla \
+       --log-file tla_joint_l2_1+05_pgd-7_10_both-cons.log \
+       --inhomo-constrain \
+       --homo-constrain

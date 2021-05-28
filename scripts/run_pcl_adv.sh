@@ -1,0 +1,21 @@
+python train_pcl_cifar10.py \
+       --network smallCNN \
+       --gpu 1 \
+       --batch-size 256 \
+       --feat-size 256 \
+       --epochs 150 \
+       --lr 0.1 \
+       --lr-prox 0.1 \
+       --lr-conprox 0.00001 \
+       --weight-prox 1 \
+       --weight-conprox 0.00001 \
+       --adv-train-iters 10 \
+       --adv-eval-iters 7 \
+       --weight-xent 1 \
+       --schedule 30 60 100 \
+       --log-interval 10 \
+       --save-freq 10 \
+       --model-dir ./model-cifar-smallCNN/pcl \
+       --stats-dir ./stats-cifar-smallCNN/pcl \
+       --save-model pcl_joint_l2_pgd-7_10 \
+       --log-file pcl_joint_l2_pgd-7_10.log
